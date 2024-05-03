@@ -1,39 +1,51 @@
+from django.shortcuts import render
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from vendorsapp.serializers import *
-from rest_framework import status
 
-@api_view(['GET','POST'])
-def all_vendors(request):
-    if request.method == 'GET':
-        vendors = Vendor.objects.all()
-        serializers  = VendorSerializer(vendors, many=True)
-        return Response(serializers.data)
-    if request.method == 'POST':
-        serializer = VendorSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+# Create your views here.
+from rest_framework import generics
+from rest_framework.response import Response
+from .models import Vendor, PurchaseOrder, HistoricalPerformance
+from .serializers import VendorSerializer, PurchaseOrderSerializer
 
-@api_view(['GET','PUT','DELETE'])
-def edit_vendor(request,pk):
-    try:
-        vendor = Vendor.objects.get(pk=pk)
-    except Vendor.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-    
-    if request.method == 'GET':
-        serializer = VendorSerializer(vendor)
-        return Response(serializer.data)
-    
-    if request.method == 'PUT':
-        serializer = VendorSerializer(vendor, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
-    
-    if request.method == 'DELETE':
-        vendor.delete()
-        return Response('Deleted Successful', status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['GET'])
+def index(request):
+    return Response({'status':100,'message':'Hello vendor'})
+class VendorListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Vendor.objects.all()
+    serializer_class = VendorSerializer
+
+class VendorRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Vendor.objects.all()
+    serializer_class = VendorSerializer
+
+class PurchaseOrderListCreateAPIView(generics.ListCreateAPIView):
+    queryset = PurchaseOrder.objects.all()
+    serializer_class = PurchaseOrderSerializer
+
+class PurchaseOrderRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = PurchaseOrder.objects.all()
+    serializer_class = PurchaseOrderSerializer
+
+class VendorPerformanceAPIView(generics.RetrieveAPIView):
+    queryset = Vendor.objects.all()
+    serializer_class = VendorSerializer
+
+    def retrieve(self, request, *args, **kwargs):
+        vendor = self.get_object()
+        performance_data = {
+            'on_time_delivery_rate': vendor.on_time_delivery_rate,
+            'quality_rating_avg': vendor.quality_rating_avg,
+            'average_response_time': vendor.average_response_time,
+            'fulfillment_rate': vendor.fulfillment_rate,
+        }
+        return Response(performance_data)
+
+class AcknowledgePurchaseOrderAPIView(generics.UpdateAPIView):
+    queryset = PurchaseOrder.objects.all()
+    serializer_class = PurchaseOrderSerializer
+
+    def perform_update(self, serializer):
+        instance = serializer.save(acknowledgment_date=timezone.now())
+        
