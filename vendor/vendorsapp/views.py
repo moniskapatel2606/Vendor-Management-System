@@ -5,8 +5,8 @@ from rest_framework.response import Response
 # Create your views here.
 from rest_framework import generics
 from rest_framework.response import Response
-from .models import Vendor, PurchaseOrder, HistoricalPerformance
-from .serializers import VendorSerializer, PurchaseOrderSerializer
+from .models import *
+from .serializers import *
 
 
 @api_view(['GET'])
@@ -48,4 +48,3 @@ class AcknowledgePurchaseOrderAPIView(generics.UpdateAPIView):
 
     def perform_update(self, serializer):
         instance = serializer.save(acknowledgment_date=timezone.now())
-        
